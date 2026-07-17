@@ -1,8 +1,9 @@
+import { sendSuccess } from '../utils/response.js';
+
 const startedAt = Date.now();
 
 export function getHealth(req, res) {
-  res.status(200).json({
-    success: true,
+  sendSuccess(res, {
     message: 'Service is healthy',
     data: {
       status: 'ok',
