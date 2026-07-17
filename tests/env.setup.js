@@ -1,0 +1,9 @@
+process.env.NODE_ENV = 'test';
+process.env.DB_PATH = ':memory:';
+process.env.JWT_SECRET = 'test-only-secret-not-for-production-use';
+process.env.JWT_EXPIRES_IN = '1h';
+process.env.CORS_ORIGIN = '*';
+process.env.RATE_LIMIT_WINDOW_MS = '900000';
+process.env.RATE_LIMIT_MAX = '1000';
+process.env.AUTH_RATE_LIMIT_WINDOW_MS = '900000';
+process.env.AUTH_RATE_LIMIT_MAX = '1000';
