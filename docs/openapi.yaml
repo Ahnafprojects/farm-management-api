@@ -1,0 +1,421 @@
+openapi: 3.0.3
+info:
+  title: Farm Management API
+  description: >
+    A RESTful API for managing farmland (lahan pertanian) records: list, search,
+    filter, create, update, and delete farms, with JWT-protected write operations.
+  version: 1.0.0
+  license:
+    name: MIT
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+tags:
+  - name: Health
+  - name: Auth
+  - name: Farms
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Returns service status and uptime. Used by the Docker HEALTHCHECK.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            example: ok
+                          uptime:
+                            type: number
+                            example: 42
+                          timestamp:
+                            type: string
+                            format: date-time
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              email: farmer@example.com
+              password: SecurePass123
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserPublic'
+              example:
+                success: true
+                message: User registered successfully
+                data: { id: 1, email: farmer@example.com }
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                success: false
+                error: { code: CONFLICT, message: An account with this email already exists }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in and obtain a JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: demo@farmapi.dev
+              password: Password123!
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          token:
+                            type: string
+                          expiresIn:
+                            type: string
+                            example: 1h
+              example:
+                success: true
+                message: Login successful
+                data: { token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..., expiresIn: 1h }
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Invalid email or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                success: false
+                error: { code: UNAUTHORIZED, message: Invalid email or password }
+
+  /farms:
+    get:
+      tags: [Farms]
+      summary: List farms (paginated, filterable, sortable)
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+        - in: query
+          name: location
+          schema: { type: string }
+          description: Case-insensitive partial match on location
+        - in: query
+          name: crop_type
+          schema: { type: string }
+          description: Case-insensitive partial match on crop_type
+        - in: query
+          name: search
+          schema: { type: string }
+          description: Case-insensitive partial match on name
+        - in: query
+          name: sort
+          schema: { type: string, enum: [name, area_hectare, created_at], default: created_at }
+        - in: query
+          name: order
+          schema: { type: string, enum: [asc, desc], default: desc }
+      responses:
+        '200':
+          description: Paginated list of farms
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Farm'
+                      meta:
+                        $ref: '#/components/schemas/PaginationMeta'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      tags: [Farms]
+      summary: Create a farm
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FarmInput'
+            example:
+              name: Sawah Makmur Jaya
+              location: Malang, Jawa Timur
+              area_hectare: 12.5
+              crop_type: padi
+      responses:
+        '201':
+          description: Farm created
+          headers:
+            Location:
+              schema: { type: string }
+              description: URL of the created resource, e.g. /farms/15
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Farm'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+  /farms/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer, minimum: 1 }
+    get:
+      tags: [Farms]
+      summary: Get a farm by id
+      responses:
+        '200':
+          description: Farm found
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Farm'
+        '400':
+          description: id is not a positive integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Farm not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                success: false
+                error: { code: NOT_FOUND, message: Farm with id 999 not found }
+    put:
+      tags: [Farms]
+      summary: Fully update a farm
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FarmInput'
+      responses:
+        '200':
+          description: Farm updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Farm'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Farm not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    delete:
+      tags: [Farms]
+      summary: Delete a farm
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Farm deleted (no content)
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Farm not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Farm:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        name: { type: string, example: Sawah Makmur Jaya }
+        location: { type: string, nullable: true, example: 'Malang, Jawa Timur' }
+        area_hectare: { type: number, nullable: true, example: 12.5 }
+        crop_type: { type: string, nullable: true, example: padi }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    FarmInput:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        location: { type: string, maxLength: 150 }
+        area_hectare: { type: number, minimum: 0, exclusiveMinimum: true }
+        crop_type: { type: string, maxLength: 50 }
+
+    UserPublic:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        email: { type: string, format: email }
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      additionalProperties: false
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      additionalProperties: false
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+
+    PaginationMeta:
+      type: object
+      properties:
+        page: { type: integer, example: 1 }
+        limit: { type: integer, example: 10 }
+        totalItems: { type: integer, example: 42 }
+        totalPages: { type: integer, example: 5 }
+
+    SuccessEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string }
+        data: {}
+
+    ErrorEnvelope:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum:
+                [VALIDATION_ERROR, UNAUTHORIZED, NOT_FOUND, CONFLICT, RATE_LIMITED, INTERNAL_ERROR]
+            message: { type: string }
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  message: { type: string }
