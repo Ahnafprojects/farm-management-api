@@ -63,20 +63,20 @@ penanganan error terpusat, automated test, kemasan Docker, dan dokumentasi OpenA
 
 ## Tech Stack
 
-| Layer       | Pilihan                                            | Alasan                                                                                                                                  |
-| ----------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Runtime     | Node.js 20 LTS                                     | LTS yang stabil, native ESM, native `fetch` (dipakai untuk Docker healthcheck)                                                          |
-| Framework   | Express 4                                          | Minimal, matang, standar de-facto untuk skala API seperti ini                                                                           |
-| Database    | SQLite via `better-sqlite3`                        | Tanpa konfigurasi, synchronous (tidak ada race condition tak terduga), berbasis file — cocok untuk skala ini. Lihat [Keputusan Desain](#keputusan-desain) |
-| Validasi    | Zod                                                 | Schema yang ketat dan mudah dikomposisi; menolak field tak dikenal; melakukan coercion query string dengan aman                          |
-| Auth        | `jsonwebtoken` + `bcryptjs`                        | Standar industri untuk JWT stateless; bcrypt untuk hashing password satu arah                                                            |
-| Security    | `helmet`, `cors`, `express-rate-limit`             | Header HTTP yang aman, whitelist origin, mitigasi brute-force                                                                            |
-| Logging     | `morgan`                                           | Logging HTTP request standar, format dev vs combined tergantung environment                                                              |
-| Testing     | Jest + Supertest                                   | Cepat, terdokumentasi dengan baik, dukungan assertion HTTP kelas satu                                                                    |
-| Docs        | `swagger-ui-express` + `openapi.yaml` manual        | Dokumentasi interaktif yang selalu sinkron dengan kode                                                                                   |
-| Lint/Format | ESLint + Prettier                                  | Gaya kode konsisten, menangkap bug lebih awal                                                                                            |
-| Container   | Docker (multi-stage) + Compose                     | Build yang dapat direproduksi, image runtime kecil, volume persisten untuk file DB                                                       |
-| CI          | GitHub Actions                                     | Gate otomatis lint + test di setiap push/PR                                                                                              |
+| Layer       | Pilihan                                      | Alasan                                                                                                                                                    |
+| ----------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime     | Node.js 20 LTS                               | LTS yang stabil, native ESM, native `fetch` (dipakai untuk Docker healthcheck)                                                                            |
+| Framework   | Express 4                                    | Minimal, matang, standar de-facto untuk skala API seperti ini                                                                                             |
+| Database    | SQLite via `better-sqlite3`                  | Tanpa konfigurasi, synchronous (tidak ada race condition tak terduga), berbasis file — cocok untuk skala ini. Lihat [Keputusan Desain](#keputusan-desain) |
+| Validasi    | Zod                                          | Schema yang ketat dan mudah dikomposisi; menolak field tak dikenal; melakukan coercion query string dengan aman                                           |
+| Auth        | `jsonwebtoken` + `bcryptjs`                  | Standar industri untuk JWT stateless; bcrypt untuk hashing password satu arah                                                                             |
+| Security    | `helmet`, `cors`, `express-rate-limit`       | Header HTTP yang aman, whitelist origin, mitigasi brute-force                                                                                             |
+| Logging     | `morgan`                                     | Logging HTTP request standar, format dev vs combined tergantung environment                                                                               |
+| Testing     | Jest + Supertest                             | Cepat, terdokumentasi dengan baik, dukungan assertion HTTP kelas satu                                                                                     |
+| Docs        | `swagger-ui-express` + `openapi.yaml` manual | Dokumentasi interaktif yang selalu sinkron dengan kode                                                                                                    |
+| Lint/Format | ESLint + Prettier                            | Gaya kode konsisten, menangkap bug lebih awal                                                                                                             |
+| Container   | Docker (multi-stage) + Compose               | Build yang dapat direproduksi, image runtime kecil, volume persisten untuk file DB                                                                        |
+| CI          | GitHub Actions                               | Gate otomatis lint + test di setiap push/PR                                                                                                               |
 
 ## Arsitektur
 
@@ -170,18 +170,18 @@ boot (`src/config/index.js`) — proses langsung berhenti dengan pesan yang jela
 kalau ada variabel wajib yang hilang atau tidak valid. Lihat `.env.example` untuk
 daftar lengkap dan otoritatif.
 
-| Nama                        | Wajib?  | Default            | Deskripsi                                                                                        |
-| --------------------------- | ------- | ------------------- | -------------------------------------------------------------------------------------------------- |
-| `PORT`                      | Tidak   | `3000`              | Port tempat HTTP server berjalan                                                                   |
-| `NODE_ENV`                  | Tidak   | `development`       | `development` \| `test` \| `production`                                                            |
-| `DB_PATH`                   | Tidak   | `./data/farms.db`   | Path ke file SQLite, atau `:memory:` untuk penyimpanan sementara                                    |
-| `JWT_SECRET`                | **Ya**  | —                    | Secret untuk sign/verify JWT. Boot gagal kalau tidak ada; di production minimal 16 karakter         |
-| `JWT_EXPIRES_IN`            | Tidak   | `1h`                 | Masa berlaku token, misal `1h`, `7d`                                                                |
-| `CORS_ORIGIN`               | Tidak   | `*`                  | Daftar origin yang diizinkan (pisahkan koma). `*` ditolak di production                             |
-| `RATE_LIMIT_WINDOW_MS`      | Tidak   | `900000`             | Jendela waktu rate limit umum (ms)                                                                  |
-| `RATE_LIMIT_MAX`            | Tidak   | `100`                | Maksimal request per jendela waktu per IP (semua route)                                             |
-| `AUTH_RATE_LIMIT_WINDOW_MS` | Tidak   | `900000`             | Jendela waktu rate limit (ms) khusus `/auth/*`                                                      |
-| `AUTH_RATE_LIMIT_MAX`       | Tidak   | `10`                 | Maksimal request per jendela waktu per IP khusus `/auth/*`                                          |
+| Nama                        | Wajib? | Default           | Deskripsi                                                                                   |
+| --------------------------- | ------ | ----------------- | ------------------------------------------------------------------------------------------- |
+| `PORT`                      | Tidak  | `3000`            | Port tempat HTTP server berjalan                                                            |
+| `NODE_ENV`                  | Tidak  | `development`     | `development` \| `test` \| `production`                                                     |
+| `DB_PATH`                   | Tidak  | `./data/farms.db` | Path ke file SQLite, atau `:memory:` untuk penyimpanan sementara                            |
+| `JWT_SECRET`                | **Ya** | —                 | Secret untuk sign/verify JWT. Boot gagal kalau tidak ada; di production minimal 16 karakter |
+| `JWT_EXPIRES_IN`            | Tidak  | `1h`              | Masa berlaku token, misal `1h`, `7d`                                                        |
+| `CORS_ORIGIN`               | Tidak  | `*`               | Daftar origin yang diizinkan (pisahkan koma). `*` ditolak di production                     |
+| `RATE_LIMIT_WINDOW_MS`      | Tidak  | `900000`          | Jendela waktu rate limit umum (ms)                                                          |
+| `RATE_LIMIT_MAX`            | Tidak  | `100`             | Maksimal request per jendela waktu per IP (semua route)                                     |
+| `AUTH_RATE_LIMIT_WINDOW_MS` | Tidak  | `900000`          | Jendela waktu rate limit (ms) khusus `/auth/*`                                              |
+| `AUTH_RATE_LIMIT_MAX`       | Tidak  | `10`              | Maksimal request per jendela waktu per IP khusus `/auth/*`                                  |
 
 ## Autentikasi
 
@@ -237,9 +237,9 @@ Sukses `200`:
 
 Butuh auth: Tidak
 
-| Field      | Tipe   | Aturan                        |
-| ---------- | ------ | ------------------------------ |
-| `email`    | string | harus email valid, wajib diisi |
+| Field      | Tipe   | Aturan                          |
+| ---------- | ------ | ------------------------------- |
+| `email`    | string | harus email valid, wajib diisi  |
 | `password` | string | minimal 8 karakter, wajib diisi |
 
 curl:
@@ -273,7 +273,7 @@ Error `409` (email sudah terdaftar):
 
 Butuh auth: Tidak
 
-| Field      | Tipe   | Aturan                  |
+| Field      | Tipe   | Aturan                   |
 | ---------- | ------ | ------------------------ |
 | `email`    | string | harus email valid, wajib |
 | `password` | string | wajib diisi              |
@@ -311,15 +311,15 @@ Butuh auth: Tidak
 
 Query params:
 
-| Param       | Tipe    | Aturan                                                          |
-| ----------- | ------- | ---------------------------------------------------------------- |
-| `page`      | integer | ≥ 1, default `1`                                                  |
-| `limit`     | integer | 1–100, default `10`                                               |
-| `location`  | string  | pencocokan sebagian, tidak case-sensitive                         |
-| `crop_type` | string  | pencocokan sebagian, tidak case-sensitive                         |
-| `search`    | string  | pencocokan sebagian pada `name`, tidak case-sensitive              |
-| `sort`      | enum    | `name` \| `area_hectare` \| `created_at`, default `created_at`    |
-| `order`     | enum    | `asc` \| `desc`, default `desc`                                    |
+| Param       | Tipe    | Aturan                                                         |
+| ----------- | ------- | -------------------------------------------------------------- |
+| `page`      | integer | ≥ 1, default `1`                                               |
+| `limit`     | integer | 1–100, default `10`                                            |
+| `location`  | string  | pencocokan sebagian, tidak case-sensitive                      |
+| `crop_type` | string  | pencocokan sebagian, tidak case-sensitive                      |
+| `search`    | string  | pencocokan sebagian pada `name`, tidak case-sensitive          |
+| `sort`      | enum    | `name` \| `area_hectare` \| `created_at`, default `created_at` |
+| `order`     | enum    | `asc` \| `desc`, default `desc`                                |
 
 Filter digabung dengan AND.
 
@@ -370,7 +370,7 @@ Error `400` (query tidak valid, misal `limit=500`):
 
 Butuh auth: Tidak
 
-| Param | Tipe           | Aturan                                  |
+| Param | Tipe           | Aturan                                   |
 | ----- | -------------- | ---------------------------------------- |
 | `id`  | integer (path) | harus integer positif, kalau tidak `400` |
 
@@ -413,8 +413,8 @@ Butuh auth: **Ya** (`Authorization: Bearer <token>`)
 
 Body (field tak dikenal ditolak):
 
-| Field          | Tipe   | Aturan                    |
-| -------------- | ------ | -------------------------- |
+| Field          | Tipe   | Aturan                      |
+| -------------- | ------ | --------------------------- |
 | `name`         | string | wajib, 1–100 karakter       |
 | `location`     | string | opsional, maks 150 karakter |
 | `area_hectare` | number | opsional, harus positif     |
@@ -520,14 +520,14 @@ Error `404`:
 
 ### Kode error
 
-| Kode               | Status HTTP | Arti                                              |
-| ------------------- | ----------- | --------------------------------------------------- |
-| `VALIDATION_ERROR` | 400         | Body/query/params request gagal validasi            |
+| Kode               | Status HTTP | Arti                                                        |
+| ------------------ | ----------- | ----------------------------------------------------------- |
+| `VALIDATION_ERROR` | 400         | Body/query/params request gagal validasi                    |
 | `UNAUTHORIZED`     | 401         | Token hilang/tidak valid/kedaluwarsa, atau kredensial salah |
-| `NOT_FOUND`        | 404         | Resource atau route tidak ditemukan                  |
-| `CONFLICT`         | 409         | Resource sudah ada (email duplikat)                  |
-| `RATE_LIMITED`     | 429         | Terlalu banyak request dalam jendela waktu berjalan   |
-| `INTERNAL_ERROR`   | 500         | Error server yang tidak terduga                      |
+| `NOT_FOUND`        | 404         | Resource atau route tidak ditemukan                         |
+| `CONFLICT`         | 409         | Resource sudah ada (email duplikat)                         |
+| `RATE_LIMITED`     | 429         | Terlalu banyak request dalam jendela waktu berjalan         |
+| `INTERNAL_ERROR`   | 500         | Error server yang tidak terduga                             |
 
 ## Penanganan Error
 

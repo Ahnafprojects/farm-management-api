@@ -17,6 +17,11 @@ router.put(
   validate(farmBodySchema, 'body'),
   farmsController.updateFarm,
 );
-router.delete('/:id', requireAuth, validate(farmIdParamSchema, 'params'), farmsController.deleteFarm);
+router.delete(
+  '/:id',
+  requireAuth,
+  validate(farmIdParamSchema, 'params'),
+  farmsController.deleteFarm,
+);
 
 export default router;
