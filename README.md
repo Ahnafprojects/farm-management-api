@@ -1,6 +1,6 @@
 # Farm Management API
 
-A RESTful API for managing farmland (_lahan pertanian_) records — built with Node.js, Express, and SQLite.
+REST API untuk mengelola data lahan pertanian — dibangun dengan Node.js, Express, dan SQLite.
 
 ![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)
 ![Express](https://img.shields.io/badge/express-4.x-000000?logo=express&logoColor=white)
@@ -8,105 +8,105 @@ A RESTful API for managing farmland (_lahan pertanian_) records — built with N
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Tests](https://img.shields.io/badge/tests-72%20passing-brightgreen)
 
-## Table of Contents
+## Daftar Isi
 
-- [Overview](#overview)
-- [Features](#features)
+- [Gambaran Umum](#gambaran-umum)
+- [Fitur](#fitur)
 - [Tech Stack](#tech-stack)
-- [Architecture](#architecture)
-- [Getting Started](#getting-started)
+- [Arsitektur](#arsitektur)
+- [Memulai](#memulai)
 - [Environment Variables](#environment-variables)
-- [Authentication](#authentication)
-- [API Reference](#api-reference)
-- [Error Handling](#error-handling)
+- [Autentikasi](#autentikasi)
+- [Referensi API](#referensi-api)
+- [Penanganan Error](#penanganan-error)
 - [Testing](#testing)
 - [Docker](#docker)
-- [API Docs](#api-docs)
-- [Design Decisions](#design-decisions)
-- [Project Status & Future Improvements](#project-status--future-improvements)
+- [Dokumentasi API](#dokumentasi-api)
+- [Keputusan Desain](#keputusan-desain)
+- [Status Proyek & Rencana Pengembangan](#status-proyek--rencana-pengembangan)
 - [Author](#author)
 
-## Overview
+## Gambaran Umum
 
-The Farm Management API lets a client list, search, filter, and paginate farmland
-records, fetch a single record, and create/update/delete records behind JWT
-authentication. It is designed as a small, production-shaped service: layered
-architecture, parameterized SQL, strict input validation, a consistent JSON
-response envelope, rate limiting, centralized error handling, automated tests,
-Docker packaging, and OpenAPI documentation.
+Farm Management API memungkinkan klien untuk melihat daftar, mencari, memfilter, dan
+melakukan paginasi data lahan pertanian, mengambil satu data spesifik, serta
+membuat/mengubah/menghapus data di balik autentikasi JWT. Proyek ini dirancang
+selayaknya service production: arsitektur berlapis, SQL terparameterisasi,
+validasi input yang ketat, format response JSON yang konsisten, rate limiting,
+penanganan error terpusat, automated test, kemasan Docker, dan dokumentasi OpenAPI.
 
-## Features
+## Fitur
 
-**Mandatory**
+**Wajib**
 
-- ✅ `GET /farms` — list with pagination
-- ✅ `GET /farms/:id` — get one
-- ✅ `POST /farms` — create (JWT protected)
-- ✅ `PUT /farms/:id` — update (JWT protected)
-- ✅ `DELETE /farms/:id` — delete (JWT protected)
-- ✅ Search (`search` on name) and filtering (`location`, `crop_type`)
-- ✅ JWT authentication (`/auth/register`, `/auth/login`)
-- ✅ Docker setup (multi-stage build + docker-compose)
-- ✅ Unit/integration tests (Jest + Supertest)
-- ✅ OpenAPI documentation (Swagger UI at `/docs`)
-- ✅ Exhaustive README
+- ✅ `GET /farms` — daftar data dengan paginasi
+- ✅ `GET /farms/:id` — ambil satu data
+- ✅ `POST /farms` — buat data baru (dilindungi JWT)
+- ✅ `PUT /farms/:id` — update data (dilindungi JWT)
+- ✅ `DELETE /farms/:id` — hapus data (dilindungi JWT)
+- ✅ Pencarian (`search` berdasarkan nama) dan filter (`location`, `crop_type`)
+- ✅ Autentikasi JWT (`/auth/register`, `/auth/login`)
+- ✅ Setup Docker (multi-stage build + docker-compose)
+- ✅ Unit/integration test (Jest + Supertest)
+- ✅ Dokumentasi OpenAPI (Swagger UI di `/docs`)
+- ✅ README yang lengkap
 
 **Bonus**
 
-- ✅ Sorting (`sort`, `order`)
-- ✅ Rate limiting (general + stricter on `/auth/*`)
-- ✅ Seed script with realistic Indonesian farm data + demo user
+- ✅ Pengurutan (`sort`, `order`)
+- ✅ Rate limiting (umum + lebih ketat khusus `/auth/*`)
+- ✅ Seed script dengan data lahan pertanian Indonesia yang realistis + demo user
 - ✅ Postman collection
-- ✅ GitHub Actions CI (lint + test on push/PR)
-- ✅ ESLint + Prettier with zero warnings
-- ✅ Consistent success/error envelope on every response, including 404 and 429
+- ✅ CI GitHub Actions (lint + test setiap push/PR)
+- ✅ ESLint + Prettier tanpa warning
+- ✅ Format response sukses/error yang konsisten di semua endpoint, termasuk 404 dan 429
 
 ## Tech Stack
 
-| Layer       | Choice                                             | Why                                                                                                                                    |
-| ----------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Runtime     | Node.js 20 LTS                                     | Stable LTS, native ESM, native `fetch` (used by the Docker healthcheck)                                                                |
-| Framework   | Express 4                                          | Minimal, mature, the de-facto standard for this scale of API                                                                           |
-| Database    | SQLite via `better-sqlite3`                        | Zero-config, synchronous (no accidental race conditions), file-based — ideal for this scope. See [Design Decisions](#design-decisions) |
-| Validation  | Zod                                                | Strict, composable schemas; rejects unknown fields; coerces query strings safely                                                       |
-| Auth        | `jsonwebtoken` + `bcryptjs`                        | Industry-standard stateless JWT auth; bcrypt for one-way password hashing                                                              |
-| Security    | `helmet`, `cors`, `express-rate-limit`             | Secure HTTP headers, origin allow-listing, brute-force mitigation                                                                      |
-| Logging     | `morgan`                                           | Standard HTTP request logging, dev vs. combined format per environment                                                                 |
-| Testing     | Jest + Supertest                                   | Fast, well-documented, first-class HTTP assertion support                                                                              |
-| Docs        | `swagger-ui-express` + hand-written `openapi.yaml` | Interactive, always-in-sync documentation                                                                                              |
-| Lint/Format | ESLint + Prettier                                  | Consistent style, catch bugs early                                                                                                     |
-| Container   | Docker (multi-stage) + Compose                     | Reproducible builds, small runtime image, persistent volume for the DB file                                                            |
-| CI          | GitHub Actions                                     | Automated lint + test gate on every push/PR                                                                                            |
+| Layer       | Pilihan                                            | Alasan                                                                                                                                  |
+| ----------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime     | Node.js 20 LTS                                     | LTS yang stabil, native ESM, native `fetch` (dipakai untuk Docker healthcheck)                                                          |
+| Framework   | Express 4                                          | Minimal, matang, standar de-facto untuk skala API seperti ini                                                                           |
+| Database    | SQLite via `better-sqlite3`                        | Tanpa konfigurasi, synchronous (tidak ada race condition tak terduga), berbasis file — cocok untuk skala ini. Lihat [Keputusan Desain](#keputusan-desain) |
+| Validasi    | Zod                                                 | Schema yang ketat dan mudah dikomposisi; menolak field tak dikenal; melakukan coercion query string dengan aman                          |
+| Auth        | `jsonwebtoken` + `bcryptjs`                        | Standar industri untuk JWT stateless; bcrypt untuk hashing password satu arah                                                            |
+| Security    | `helmet`, `cors`, `express-rate-limit`             | Header HTTP yang aman, whitelist origin, mitigasi brute-force                                                                            |
+| Logging     | `morgan`                                           | Logging HTTP request standar, format dev vs combined tergantung environment                                                              |
+| Testing     | Jest + Supertest                                   | Cepat, terdokumentasi dengan baik, dukungan assertion HTTP kelas satu                                                                    |
+| Docs        | `swagger-ui-express` + `openapi.yaml` manual        | Dokumentasi interaktif yang selalu sinkron dengan kode                                                                                   |
+| Lint/Format | ESLint + Prettier                                  | Gaya kode konsisten, menangkap bug lebih awal                                                                                            |
+| Container   | Docker (multi-stage) + Compose                     | Build yang dapat direproduksi, image runtime kecil, volume persisten untuk file DB                                                       |
+| CI          | GitHub Actions                                     | Gate otomatis lint + test di setiap push/PR                                                                                              |
 
-## Architecture
+## Arsitektur
 
-Layered architecture — each layer has one job, and dependencies only point downward:
+Arsitektur berlapis — setiap layer punya satu tanggung jawab, dan dependency hanya mengalir ke bawah:
 
 ```
 src/
-├── app.js                 # Express app (exported, no .listen — used directly in tests)
+├── app.js                 # Express app (di-export, tanpa .listen — dipakai langsung di test)
 ├── server.js               # bootstrap + graceful shutdown (SIGINT/SIGTERM)
-├── config/index.js         # env loading + Zod validation, fail-fast on boot
+├── config/index.js         # loading env + validasi Zod, fail-fast saat boot
 ├── db/
-│   ├── connection.js       # better-sqlite3 instance (WAL mode)
+│   ├── connection.js       # instance better-sqlite3 (mode WAL)
 │   ├── schema.js            # CREATE TABLE IF NOT EXISTS
 │   └── seed.js              # npm run seed
-├── routes/                 # HTTP method + path -> controller wiring
-├── controllers/            # thin: parse req -> call service -> send response
-├── services/                # business logic, throws ApiError
-├── repositories/            # all SQL, prepared statements only
+├── routes/                 # pemetaan HTTP method + path -> controller
+├── controllers/            # tipis: parse req -> panggil service -> kirim response
+├── services/                # business logic, melempar ApiError
+├── repositories/            # semua SQL, hanya prepared statements
 ├── middlewares/             # auth, validate, errorHandler, notFound, rateLimiter
-├── schemas/                 # Zod schemas
+├── schemas/                 # schema Zod
 └── utils/                   # ApiError, asyncHandler, response helpers
 ```
 
-Request lifecycle:
+Alur request:
 
 ```
 Client
   │
   ▼
-helmet / cors / morgan / express.json / rate limiter   (app.js middleware chain)
+helmet / cors / morgan / express.json / rate limiter   (middleware chain di app.js)
   │
   ▼
 Router                (routes/*.routes.js)
@@ -115,13 +115,13 @@ Router                (routes/*.routes.js)
 validate(schema)       (middlewares/validate.js — Zod)
   │
   ▼
-requireAuth (if protected)   (middlewares/auth.js — JWT)
+requireAuth (jika dilindungi)   (middlewares/auth.js — JWT)
   │
   ▼
-Controller             (controllers/*.controller.js — thin, no business logic)
+Controller             (controllers/*.controller.js — tipis, tanpa business logic)
   │
   ▼
-Service                (services/*.service.js — business rules, throws ApiError)
+Service                (services/*.service.js — aturan bisnis, melempar ApiError)
   │
   ▼
 Repository             (repositories/*.repository.js — prepared SQL statements)
@@ -130,75 +130,75 @@ Repository             (repositories/*.repository.js — prepared SQL statements
 SQLite (better-sqlite3)
   │
   ▼
-Response envelope sent back through controller, or
-errorHandler middleware if anything threw
+Response dikirim balik lewat controller, atau
+middleware errorHandler kalau ada yang error
 ```
 
-## Getting Started
+## Memulai
 
-Prerequisites: Node.js 20+, npm.
+Prasyarat: Node.js 20+, npm.
 
 ```bash
-# 1. Clone the repository
+# 1. Clone repository
 git clone <your-fork-url> farm-management-api
 cd farm-management-api
 
 # 2. Install dependencies
 npm install
 
-# 3. Configure environment variables
+# 3. Konfigurasi environment variables
 cp .env.example .env
-# edit .env and set a real JWT_SECRET (any long random string works for local dev)
+# edit .env dan isi JWT_SECRET dengan string acak yang panjang (untuk lokal, bebas)
 
-# 4. Seed the database (creates data/farms.db with sample farms + demo user)
+# 4. Seed database (membuat data/farms.db berisi contoh data farm + demo user)
 npm run seed
 
-# 5. Run in development (auto-restarts on file change)
+# 5. Jalankan mode development (auto-restart saat file berubah)
 npm run dev
 
-# ...or run in production mode
+# ...atau jalankan mode production
 npm start
 ```
 
-The API will be available at `http://localhost:3000`, with interactive docs at
+API akan tersedia di `http://localhost:3000`, dengan dokumentasi interaktif di
 `http://localhost:3000/docs`.
 
 ## Environment Variables
 
-All configuration is read from environment variables and validated with Zod at
-boot (`src/config/index.js`) — the process exits immediately with a clear
-message if a required variable is missing or invalid. See `.env.example` for
-the complete, authoritative list.
+Semua konfigurasi dibaca dari environment variables dan divalidasi dengan Zod saat
+boot (`src/config/index.js`) — proses langsung berhenti dengan pesan yang jelas
+kalau ada variabel wajib yang hilang atau tidak valid. Lihat `.env.example` untuk
+daftar lengkap dan otoritatif.
 
-| Name                        | Required? | Default           | Description                                                                                     |
-| --------------------------- | --------- | ----------------- | ----------------------------------------------------------------------------------------------- |
-| `PORT`                      | No        | `3000`            | Port the HTTP server listens on                                                                 |
-| `NODE_ENV`                  | No        | `development`     | `development` \| `test` \| `production`                                                         |
-| `DB_PATH`                   | No        | `./data/farms.db` | Path to the SQLite file, or `:memory:` for ephemeral storage                                    |
-| `JWT_SECRET`                | **Yes**   | —                 | Secret used to sign/verify JWTs. Boot fails without it; in production it must be ≥16 characters |
-| `JWT_EXPIRES_IN`            | No        | `1h`              | Token lifetime, e.g. `1h`, `7d`                                                                 |
-| `CORS_ORIGIN`               | No        | `*`               | Comma-separated allow-list of origins. `*` is rejected in production                            |
-| `RATE_LIMIT_WINDOW_MS`      | No        | `900000`          | General rate-limit window (ms)                                                                  |
-| `RATE_LIMIT_MAX`            | No        | `100`             | Max requests per window per IP (all routes)                                                     |
-| `AUTH_RATE_LIMIT_WINDOW_MS` | No        | `900000`          | Rate-limit window (ms) for `/auth/*`                                                            |
-| `AUTH_RATE_LIMIT_MAX`       | No        | `10`              | Max requests per window per IP for `/auth/*`                                                    |
+| Nama                        | Wajib?  | Default            | Deskripsi                                                                                        |
+| --------------------------- | ------- | ------------------- | -------------------------------------------------------------------------------------------------- |
+| `PORT`                      | Tidak   | `3000`              | Port tempat HTTP server berjalan                                                                   |
+| `NODE_ENV`                  | Tidak   | `development`       | `development` \| `test` \| `production`                                                            |
+| `DB_PATH`                   | Tidak   | `./data/farms.db`   | Path ke file SQLite, atau `:memory:` untuk penyimpanan sementara                                    |
+| `JWT_SECRET`                | **Ya**  | —                    | Secret untuk sign/verify JWT. Boot gagal kalau tidak ada; di production minimal 16 karakter         |
+| `JWT_EXPIRES_IN`            | Tidak   | `1h`                 | Masa berlaku token, misal `1h`, `7d`                                                                |
+| `CORS_ORIGIN`               | Tidak   | `*`                  | Daftar origin yang diizinkan (pisahkan koma). `*` ditolak di production                             |
+| `RATE_LIMIT_WINDOW_MS`      | Tidak   | `900000`             | Jendela waktu rate limit umum (ms)                                                                  |
+| `RATE_LIMIT_MAX`            | Tidak   | `100`                | Maksimal request per jendela waktu per IP (semua route)                                             |
+| `AUTH_RATE_LIMIT_WINDOW_MS` | Tidak   | `900000`             | Jendela waktu rate limit (ms) khusus `/auth/*`                                                      |
+| `AUTH_RATE_LIMIT_MAX`       | Tidak   | `10`                 | Maksimal request per jendela waktu per IP khusus `/auth/*`                                          |
 
-## Authentication
+## Autentikasi
 
-1. `POST /auth/register` with `{ email, password }` (password ≥ 8 chars) creates a user.
-2. `POST /auth/login` with the same credentials returns a signed JWT and its lifetime.
-3. Send the token on protected requests as `Authorization: Bearer <token>`.
-4. Tokens are signed with HS256 and expire after `JWT_EXPIRES_IN` (default `1h`).
-5. Missing, malformed, or expired tokens all yield an identical `401 UNAUTHORIZED` response, and login failures never reveal whether the email or the password was wrong.
+1. `POST /auth/register` dengan `{ email, password }` (password minimal 8 karakter) membuat user baru.
+2. `POST /auth/login` dengan kredensial yang sama mengembalikan JWT beserta masa berlakunya.
+3. Kirim token pada request yang dilindungi lewat header `Authorization: Bearer <token>`.
+4. Token ditandatangani dengan HS256 dan kedaluwarsa setelah `JWT_EXPIRES_IN` (default `1h`).
+5. Token yang hilang, salah format, atau kedaluwarsa semuanya menghasilkan response `401 UNAUTHORIZED` yang identik, dan kegagalan login tidak pernah membocorkan apakah email atau password yang salah.
 
-**Demo credentials** (created by `npm run seed`):
+**Kredensial demo** (dibuat oleh `npm run seed`):
 
 ```
 email:    demo@farmapi.dev
 password: Password123!
 ```
 
-Quick start:
+Contoh cepat:
 
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
@@ -209,13 +209,13 @@ curl -s http://localhost:3000/farms \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-## API Reference
+## Referensi API
 
-Base URL: `http://localhost:3000` (no version prefix — see [Design Decisions](#design-decisions)).
+Base URL: `http://localhost:3000` (tanpa prefix versi — lihat [Keputusan Desain](#keputusan-desain)).
 
 ### GET /health
 
-Auth required: No
+Butuh auth: Tidak
 
 curl:
 
@@ -223,7 +223,7 @@ curl:
 curl -s http://localhost:3000/health
 ```
 
-Success `200`:
+Sukses `200`:
 
 ```json
 {
@@ -235,12 +235,12 @@ Success `200`:
 
 ### POST /auth/register
 
-Auth required: No
+Butuh auth: Tidak
 
-| Field      | Type   | Rules                      |
-| ---------- | ------ | -------------------------- |
-| `email`    | string | valid email, required      |
-| `password` | string | min 8 characters, required |
+| Field      | Tipe   | Aturan                        |
+| ---------- | ------ | ------------------------------ |
+| `email`    | string | harus email valid, wajib diisi |
+| `password` | string | minimal 8 karakter, wajib diisi |
 
 curl:
 
@@ -250,7 +250,7 @@ curl -s -X POST http://localhost:3000/auth/register \
   -d '{"email":"farmer@example.com","password":"SecurePass123"}'
 ```
 
-Success `201`:
+Sukses `201`:
 
 ```json
 {
@@ -260,7 +260,7 @@ Success `201`:
 }
 ```
 
-Error `409` (duplicate email):
+Error `409` (email sudah terdaftar):
 
 ```json
 {
@@ -271,12 +271,12 @@ Error `409` (duplicate email):
 
 ### POST /auth/login
 
-Auth required: No
+Butuh auth: Tidak
 
-| Field      | Type   | Rules                 |
-| ---------- | ------ | --------------------- |
-| `email`    | string | valid email, required |
-| `password` | string | required              |
+| Field      | Tipe   | Aturan                  |
+| ---------- | ------ | ------------------------ |
+| `email`    | string | harus email valid, wajib |
+| `password` | string | wajib diisi              |
 
 curl:
 
@@ -286,7 +286,7 @@ curl -s -X POST http://localhost:3000/auth/login \
   -d '{"email":"demo@farmapi.dev","password":"Password123!"}'
 ```
 
-Success `200`:
+Sukses `200`:
 
 ```json
 {
@@ -296,7 +296,7 @@ Success `200`:
 }
 ```
 
-Error `401` (wrong email or password — identical message either way):
+Error `401` (email atau password salah — pesan sama untuk keduanya):
 
 ```json
 {
@@ -307,21 +307,21 @@ Error `401` (wrong email or password — identical message either way):
 
 ### GET /farms
 
-Auth required: No
+Butuh auth: Tidak
 
 Query params:
 
-| Param       | Type    | Rules                                                          |
-| ----------- | ------- | -------------------------------------------------------------- |
-| `page`      | integer | ≥ 1, default `1`                                               |
-| `limit`     | integer | 1–100, default `10`                                            |
-| `location`  | string  | case-insensitive partial match                                 |
-| `crop_type` | string  | case-insensitive partial match                                 |
-| `search`    | string  | case-insensitive partial match on `name`                       |
-| `sort`      | enum    | `name` \| `area_hectare` \| `created_at`, default `created_at` |
-| `order`     | enum    | `asc` \| `desc`, default `desc`                                |
+| Param       | Tipe    | Aturan                                                          |
+| ----------- | ------- | ---------------------------------------------------------------- |
+| `page`      | integer | ≥ 1, default `1`                                                  |
+| `limit`     | integer | 1–100, default `10`                                               |
+| `location`  | string  | pencocokan sebagian, tidak case-sensitive                         |
+| `crop_type` | string  | pencocokan sebagian, tidak case-sensitive                         |
+| `search`    | string  | pencocokan sebagian pada `name`, tidak case-sensitive              |
+| `sort`      | enum    | `name` \| `area_hectare` \| `created_at`, default `created_at`    |
+| `order`     | enum    | `asc` \| `desc`, default `desc`                                    |
 
-Filters combine with AND.
+Filter digabung dengan AND.
 
 curl:
 
@@ -329,7 +329,7 @@ curl:
 curl -s "http://localhost:3000/farms?page=1&limit=5&crop_type=padi&sort=area_hectare&order=asc"
 ```
 
-Success `200`:
+Sukses `200`:
 
 ```json
 {
@@ -350,7 +350,7 @@ Success `200`:
 }
 ```
 
-Error `400` (invalid query, e.g. `limit=500`):
+Error `400` (query tidak valid, misal `limit=500`):
 
 ```json
 {
@@ -363,16 +363,16 @@ Error `400` (invalid query, e.g. `limit=500`):
 }
 ```
 
-**Pagination meta object**: `page` (current page), `limit` (page size), `totalItems`
-(total matching rows), `totalPages` (`ceil(totalItems / limit)`).
+**Objek meta paginasi**: `page` (halaman saat ini), `limit` (jumlah per halaman), `totalItems`
+(total baris yang cocok), `totalPages` (`ceil(totalItems / limit)`).
 
 ### GET /farms/:id
 
-Auth required: No
+Butuh auth: Tidak
 
-| Param | Type           | Rules                        |
-| ----- | -------------- | ---------------------------- |
-| `id`  | integer (path) | positive integer, else `400` |
+| Param | Tipe           | Aturan                                  |
+| ----- | -------------- | ---------------------------------------- |
+| `id`  | integer (path) | harus integer positif, kalau tidak `400` |
 
 curl:
 
@@ -380,7 +380,7 @@ curl:
 curl -s http://localhost:3000/farms/1
 ```
 
-Success `200`:
+Sukses `200`:
 
 ```json
 {
@@ -409,16 +409,16 @@ Error `404`:
 
 ### POST /farms
 
-Auth required: **Yes** (`Authorization: Bearer <token>`)
+Butuh auth: **Ya** (`Authorization: Bearer <token>`)
 
-Body (unknown fields rejected):
+Body (field tak dikenal ditolak):
 
-| Field          | Type   | Rules                 |
-| -------------- | ------ | --------------------- |
-| `name`         | string | required, 1–100 chars |
-| `location`     | string | optional, ≤150 chars  |
-| `area_hectare` | number | optional, positive    |
-| `crop_type`    | string | optional, ≤50 chars   |
+| Field          | Tipe   | Aturan                    |
+| -------------- | ------ | -------------------------- |
+| `name`         | string | wajib, 1–100 karakter       |
+| `location`     | string | opsional, maks 150 karakter |
+| `area_hectare` | number | opsional, harus positif     |
+| `crop_type`    | string | opsional, maks 50 karakter  |
 
 curl:
 
@@ -429,7 +429,7 @@ curl -s -i -X POST http://localhost:3000/farms \
   -d '{"name":"Sawah Makmur Jaya","location":"Malang, Jawa Timur","area_hectare":12.5,"crop_type":"padi"}'
 ```
 
-Success `201` (also returns a `Location: /farms/<id>` header):
+Sukses `201` (juga mengembalikan header `Location: /farms/<id>`):
 
 ```json
 {
@@ -447,7 +447,7 @@ Success `201` (also returns a `Location: /farms/<id>` header):
 }
 ```
 
-Error `401` (missing/invalid token):
+Error `401` (token hilang/tidak valid):
 
 ```json
 {
@@ -458,7 +458,7 @@ Error `401` (missing/invalid token):
 
 ### PUT /farms/:id
 
-Auth required: **Yes**. Full-update semantics — same validation as `POST` (`name` required); `updated_at` is refreshed.
+Butuh auth: **Ya**. Semantik full-update — validasi sama seperti `POST` (`name` wajib); `updated_at` diperbarui.
 
 curl:
 
@@ -469,7 +469,7 @@ curl -s -X PUT http://localhost:3000/farms/15 \
   -d '{"name":"Sawah Makmur Jaya Updated","location":"Malang, Jawa Timur","area_hectare":15,"crop_type":"jagung"}'
 ```
 
-Success `200`:
+Sukses `200`:
 
 ```json
 {
@@ -498,7 +498,7 @@ Error `404`:
 
 ### DELETE /farms/:id
 
-Auth required: **Yes**
+Butuh auth: **Ya**
 
 curl:
 
@@ -507,7 +507,7 @@ curl -s -i -X DELETE http://localhost:3000/farms/15 \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-Success: `204 No Content` (empty body).
+Sukses: `204 No Content` (tanpa body).
 
 Error `404`:
 
@@ -518,28 +518,28 @@ Error `404`:
 }
 ```
 
-### Error codes
+### Kode error
 
-| Code               | HTTP status | Meaning                                           |
-| ------------------ | ----------- | ------------------------------------------------- |
-| `VALIDATION_ERROR` | 400         | Request body/query/params failed validation       |
-| `UNAUTHORIZED`     | 401         | Missing/invalid/expired token, or bad credentials |
-| `NOT_FOUND`        | 404         | Resource or route does not exist                  |
-| `CONFLICT`         | 409         | Resource already exists (duplicate email)         |
-| `RATE_LIMITED`     | 429         | Too many requests in the current window           |
-| `INTERNAL_ERROR`   | 500         | Unexpected server error                           |
+| Kode               | Status HTTP | Arti                                              |
+| ------------------- | ----------- | --------------------------------------------------- |
+| `VALIDATION_ERROR` | 400         | Body/query/params request gagal validasi            |
+| `UNAUTHORIZED`     | 401         | Token hilang/tidak valid/kedaluwarsa, atau kredensial salah |
+| `NOT_FOUND`        | 404         | Resource atau route tidak ditemukan                  |
+| `CONFLICT`         | 409         | Resource sudah ada (email duplikat)                  |
+| `RATE_LIMITED`     | 429         | Terlalu banyak request dalam jendela waktu berjalan   |
+| `INTERNAL_ERROR`   | 500         | Error server yang tidak terduga                      |
 
-## Error Handling
+## Penanganan Error
 
-Every response — success or failure — uses the same envelope shape.
+Setiap response — sukses maupun gagal — memakai format yang sama.
 
-Success:
+Sukses:
 
 ```json
 { "success": true, "message": "...", "data": {}, "meta": {} }
 ```
 
-(`meta` is present only on paginated list endpoints.)
+(`meta` hanya muncul di endpoint list dengan paginasi.)
 
 Error:
 
@@ -554,39 +554,39 @@ Error:
 }
 ```
 
-This includes unmatched routes (`404 NOT_FOUND` via the `notFound` middleware),
-rate-limit rejections (`429 RATE_LIMITED`), and malformed JSON bodies (`400
-VALIDATION_ERROR`). In production, unexpected (`500`) errors never leak stack
-traces or internal messages to the client — they are logged server-side and a
-generic message is returned instead.
+Ini termasuk route yang tidak dikenal (`404 NOT_FOUND` lewat middleware `notFound`),
+penolakan karena rate limit (`429 RATE_LIMITED`), dan body JSON yang salah format
+(`400 VALIDATION_ERROR`). Di production, error tak terduga (`500`) tidak pernah
+membocorkan stack trace atau pesan internal ke klien — error tersebut dicatat di
+sisi server dan pesan generik dikembalikan ke klien.
 
 ## Testing
 
 ```bash
-npm test              # run the full Jest + Supertest suite
-npm run test:coverage # same, with a coverage report
+npm test              # jalankan seluruh test suite Jest + Supertest
+npm run test:coverage # sama, dengan laporan coverage
 ```
 
-Tests run against an isolated in-memory SQLite database (`DB_PATH=:memory:`,
-set in `tests/env.setup.js`) — they never touch the development database file.
+Test dijalankan terhadap database SQLite in-memory yang terisolasi (`DB_PATH=:memory:`,
+diatur di `tests/env.setup.js`) — tidak pernah menyentuh file database development.
 
-Coverage includes:
+Cakupan test meliputi:
 
 - `GET /health`
-- Auth: register success/duplicate/invalid body, login success/wrong password (identical message, constant-time)
-- Farms happy paths: create (+ `Location` header), list (+ `meta`), get by id, update, delete
-- Farms error paths: missing/invalid/expired/forged/`alg:none` token, missing/empty/whitespace/over-length `name`, invalid `area_hectare`, unknown fields, mass-assignment of system fields, non-integer/negative/zero/decimal id, 404 on GET/PUT/DELETE
-- Pagination meta correctness, the `limit`/`page` boundary validation, and no-match filters returning `200` with an empty array
-- Filtering by `location`, `crop_type`, `search`, combined AND filters, and `sort`/`order` (including actual ordering verification and invalid-value rejection)
-- Cross-cutting: unknown-route and unsupported-method envelopes, malformed JSON, oversized body, both rate limiters returning the `RATE_LIMITED` envelope, and config fail-fast validation at boot
+- Auth: register sukses/duplikat/body tidak valid, login sukses/password salah (pesan identik, waktu respons konstan)
+- Farms happy path: create (+ header `Location`), list (+ `meta`), get by id, update, delete
+- Farms error path: token hilang/tidak valid/kedaluwarsa/palsu/`alg:none`, `name` hilang/kosong/spasi/terlalu panjang, `area_hectare` tidak valid, field tak dikenal, mass-assignment field sistem, id non-integer/negatif/nol/desimal, 404 pada GET/PUT/DELETE
+- Ketepatan meta paginasi, validasi batas `limit`/`page`, dan filter tanpa hasil yang tetap mengembalikan `200` dengan array kosong
+- Filter berdasarkan `location`, `crop_type`, `search`, kombinasi filter dengan AND, serta `sort`/`order` (termasuk verifikasi urutan aktual dan penolakan nilai tidak valid)
+- Lintas fitur: response untuk route tak dikenal dan method tak didukung, JSON salah format, body terlalu besar, kedua rate limiter mengembalikan envelope `RATE_LIMITED`, dan validasi fail-fast konfigurasi saat boot
 
 ## Docker
 
 ```bash
-# Build and run via Docker Compose (reads JWT_SECRET etc. from your shell env or a .env file)
+# Build dan jalankan lewat Docker Compose (baca JWT_SECRET dkk. dari environment shell atau file .env)
 JWT_SECRET=$(openssl rand -hex 32) docker compose up --build
 
-# Or build/run the image directly
+# Atau build/jalankan image secara langsung
 docker build -t farm-management-api .
 docker run -p 3000:3000 \
   -e JWT_SECRET=$(openssl rand -hex 32) \
@@ -594,55 +594,57 @@ docker run -p 3000:3000 \
   farm-management-api
 ```
 
-The container runs as a non-root user, exposes port `3000`, persists the
-SQLite file in a named volume (`farm-data`), and defines a `HEALTHCHECK` that
-polls `GET /health`.
+Container berjalan sebagai non-root user, membuka port `3000`, menyimpan file
+SQLite di named volume (`farm-data`) agar data tetap ada setelah restart, dan
+memiliki `HEALTHCHECK` yang mengecek `GET /health`.
 
-## API Docs
+## Dokumentasi API
 
-- Interactive Swagger UI: [`GET /docs`](http://localhost:3000/docs), generated from `docs/openapi.yaml` (OpenAPI 3.0).
-- Postman collection: [`docs/postman_collection.json`](docs/postman_collection.json) — import it into Postman, set the `token` collection variable after calling **Login** (a test script sets it automatically), and exercise every endpoint.
+- Swagger UI interaktif: [`GET /docs`](http://localhost:3000/docs), dihasilkan dari `docs/openapi.yaml` (OpenAPI 3.0).
+- Postman collection: [`docs/postman_collection.json`](docs/postman_collection.json) — import ke Postman, atur variabel collection `token` setelah memanggil **Login** (otomatis diisi lewat test script), lalu coba semua endpoint.
 
-## Design Decisions
+## Keputusan Desain
 
-- **SQLite / better-sqlite3**: for a single-service CRUD API of this scope, a
-  zero-config, file-based, synchronous database removes an entire class of
-  operational concerns (connection pools, network latency, async race
-  conditions) while still enforcing real SQL constraints and using genuine
-  prepared statements. `better-sqlite3`'s synchronous API also simplifies the
-  service/repository layers (no `await` scattered through simple queries) and
-  makes tests fast and fully isolated via `:memory:` databases.
-- **Layered architecture** (routes → controllers → services → repositories):
-  keeps HTTP concerns, business rules, and SQL each in one place, so any layer
-  can be tested or replaced independently. Controllers stay thin; all SQL is
-  confined to `repositories/`, which is what makes "zero string concatenation
-  of user input into SQL" straightforward to guarantee and review.
-- **Zod**: schemas double as documentation, coerce query-string types safely
-  (e.g. `page=2` → `2`), and reject unknown fields (`.strict()`) so typos in
-  request bodies fail loudly instead of being silently ignored.
-- **No `/api/v1` prefix**: the brief specifies exact literal paths
-  (`/farms`, `/auth/...`, `/health`, `/docs`), so no version prefix was added.
-  In a real production rollout, introducing `/api/v1/...` (or an `Accept`
-  header-based scheme) would be one of the first hardening steps once a
-  second API version is anticipated.
-- **Security**: `helmet` for standard secure headers, `cors` restricted to an
-  explicit origin allow-list (with `*` rejected outright in production),
-  general + auth-specific rate limiting to slow brute-force attempts, a 10kb
-  JSON body limit, bcrypt (cost 10) for password hashing, and fail-fast Zod
-  validation of environment variables at boot so misconfiguration is caught
-  immediately rather than at request time.
+- **SQLite / better-sqlite3**: untuk API CRUD satu-service dengan skala seperti
+  ini, database berbasis file yang synchronous dan tanpa konfigurasi
+  menghilangkan banyak masalah operasional (connection pool, latensi jaringan,
+  race condition asinkron) sambil tetap menegakkan constraint SQL asli dan
+  memakai prepared statement sungguhan. API synchronous dari `better-sqlite3`
+  juga menyederhanakan layer service/repository (tidak ada `await` bertebaran
+  di query sederhana) dan membuat test cepat serta terisolasi penuh lewat
+  database `:memory:`.
+- **Arsitektur berlapis** (routes → controllers → services → repositories):
+  memisahkan urusan HTTP, aturan bisnis, dan SQL masing-masing di satu tempat,
+  sehingga tiap layer bisa diuji atau diganti secara independen. Controller
+  tetap tipis; semua SQL terkumpul di `repositories/`, yang membuat aturan
+  "tidak ada string concatenation input user ke SQL" mudah dijamin dan direview.
+- **Zod**: schema sekaligus berfungsi sebagai dokumentasi, melakukan coercion
+  tipe query string dengan aman (misal `page=2` → `2`), dan menolak field tak
+  dikenal (`.strict()`) sehingga typo di body request langsung gagal alih-alih
+  diabaikan diam-diam.
+- **Tanpa prefix `/api/v1`**: brief menetapkan path literal yang eksak
+  (`/farms`, `/auth/...`, `/health`, `/docs`), jadi tidak ditambahkan prefix
+  versi. Dalam rollout production sungguhan, menambahkan `/api/v1/...` (atau
+  skema berbasis header `Accept`) akan jadi salah satu langkah hardening
+  pertama begitu versi API kedua dibutuhkan.
+- **Security**: `helmet` untuk header HTTP standar yang aman, `cors` dibatasi
+  ke whitelist origin eksplisit (dengan `*` ditolak total di production),
+  rate limiting umum + khusus auth untuk memperlambat percobaan brute-force,
+  batas body JSON 10kb, bcrypt (cost 10) untuk hashing password, dan validasi
+  Zod yang fail-fast pada environment variable saat boot supaya kesalahan
+  konfigurasi langsung ketahuan, bukan baru muncul saat ada request.
 
-## Project Status & Future Improvements
+## Status Proyek & Rencana Pengembangan
 
-This project satisfies the brief end-to-end and is ready for review. Honest
-list of what a real production rollout would add next:
+Proyek ini sudah memenuhi seluruh brief dan siap untuk direview. Daftar jujur
+hal yang akan ditambahkan pada rollout production sungguhan:
 
-- Refresh tokens / token revocation (current JWTs are stateless and can't be invalidated before expiry)
-- Role-based access control (RBAC) — today any authenticated user can write any farm
-- Migration to PostgreSQL for multi-instance/horizontal scaling
-- CI/CD pipeline that also builds and deploys the Docker image
-- Request-id propagation and structured (JSON) logging for observability
-- API versioning (`/api/v1`) once a breaking change is needed
+- Refresh token / pencabutan token (JWT saat ini stateless dan tidak bisa dibatalkan sebelum kedaluwarsa)
+- Role-based access control (RBAC) — saat ini semua user yang sudah login bisa mengubah farm milik siapa saja
+- Migrasi ke PostgreSQL untuk skalabilitas multi-instance/horizontal
+- Pipeline CI/CD yang juga build dan deploy image Docker
+- Propagasi request-id dan logging terstruktur (JSON) untuk observability
+- Versioning API (`/api/v1`) begitu ada perubahan yang breaking
 
 ## Author
 
