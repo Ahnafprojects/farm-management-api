@@ -1,4 +1,5 @@
 import * as farmsRepository from '../repositories/farms.repository.js';
+import { ApiError } from '../utils/ApiError.js';
 
 /**
  * Retrieves every farm.
@@ -9,17 +10,21 @@ export function listFarms() {
 }
 
 /**
- * Retrieves a single farm by id, or undefined if it doesn't exist.
+ * Retrieves a single farm by id, throwing a 404 ApiError if missing.
  * @param {number} id
- * @returns {object|undefined}
+ * @returns {object}
  */
 export function getFarm(id) {
-  return farmsRepository.findById(id);
+  const farm = farmsRepository.findById(id);
+  if (!farm) {
+    throw ApiError.notFound(`Farm with id ${id} not found`);
+  }
+  return farm;
 }
 
 /**
  * Creates a new farm record.
- * @param {object} data - farm payload
+ * @param {object} data - validated farm payload
  * @returns {object} the created farm
  */
 export function createFarm(data) {
@@ -27,22 +32,28 @@ export function createFarm(data) {
 }
 
 /**
- * Fully updates an existing farm record.
+ * Fully updates an existing farm record, throwing a 404 ApiError if missing.
  * @param {number} id
- * @param {object} data - farm payload
- * @returns {object|undefined} the updated farm, or undefined if it doesn't exist
+ * @param {object} data - validated farm payload
+ * @returns {object} the updated farm
  */
 export function updateFarm(id, data) {
-  return farmsRepository.update(id, data);
+  const updated = farmsRepository.update(id, data);
+  if (!updated) {
+    throw ApiError.notFound(`Farm with id ${id} not found`);
+  }
+  return updated;
 }
 
 /**
- * Deletes a farm record.
+ * Deletes a farm record, throwing a 404 ApiError if missing.
  * @param {number} id
- * @returns {boolean} true if a row was deleted
  */
 export function deleteFarm(id) {
-  return farmsRepository.remove(id);
+  const deleted = farmsRepository.remove(id);
+  if (!deleted) {
+    throw ApiError.notFound(`Farm with id ${id} not found`);
+  }
 }
 
 export default { listFarms, getFarm, createFarm, updateFarm, deleteFarm };
