@@ -1,7 +1,11 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
 import { config } from './config/index.js';
 import farmsRoutes from './routes/farms.routes.js';
 import authRoutes from './routes/auth.routes.js';
@@ -9,6 +13,8 @@ import healthRoutes from './routes/health.routes.js';
 import { generalLimiter, authLimiter } from './middlewares/rateLimiter.js';
 import { notFound } from './middlewares/notFound.js';
 import { errorHandler } from './middlewares/errorHandler.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
@@ -30,6 +36,11 @@ app.use(express.json({ limit: '10kb' }));
 app.use(generalLimiter);
 
 app.use('/health', healthRoutes);
+
+const openapiPath = path.join(__dirname, '..', 'docs', 'openapi.yaml');
+const swaggerDocument = YAML.load(openapiPath);
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 app.use('/auth', authLimiter, authRoutes);
 app.use('/farms', farmsRoutes);
 
