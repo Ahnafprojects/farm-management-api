@@ -3,10 +3,11 @@ import * as farmsController from '../controllers/farms.controller.js';
 import { requireAuth } from '../middlewares/auth.js';
 import { validate } from '../middlewares/validate.js';
 import { farmBodySchema, farmIdParamSchema } from '../schemas/farm.schema.js';
+import { listFarmsQuerySchema } from '../schemas/query.schema.js';
 
 const router = Router();
 
-router.get('/', farmsController.listFarms);
+router.get('/', validate(listFarmsQuerySchema, 'query'), farmsController.listFarms);
 router.get('/:id', validate(farmIdParamSchema, 'params'), farmsController.getFarm);
 router.post('/', requireAuth, validate(farmBodySchema, 'body'), farmsController.createFarm);
 router.put(

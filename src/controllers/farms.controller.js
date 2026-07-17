@@ -3,8 +3,8 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendSuccess } from '../utils/response.js';
 
 export const listFarms = asyncHandler(async (req, res) => {
-  const farms = farmsService.listFarms();
-  sendSuccess(res, { message: 'Farms retrieved successfully', data: farms });
+  const { items, meta } = farmsService.listFarms(req.query);
+  sendSuccess(res, { message: 'Farms retrieved successfully', data: items, meta });
 });
 
 export const getFarm = asyncHandler(async (req, res) => {

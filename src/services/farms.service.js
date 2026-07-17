@@ -2,11 +2,22 @@ import * as farmsRepository from '../repositories/farms.repository.js';
 import { ApiError } from '../utils/ApiError.js';
 
 /**
- * Retrieves every farm.
- * @returns {object[]}
+ * Retrieves a paginated, filtered, sorted list of farms.
+ * @param {object} query - validated query params (page, limit, filters, sort, order)
+ * @returns {{ items: object[], meta: { page: number, limit: number, totalItems: number, totalPages: number } }}
  */
-export function listFarms() {
-  return farmsRepository.findAll();
+export function listFarms(query) {
+  const { rows, totalItems } = farmsRepository.findMany(query);
+  const totalPages = Math.ceil(totalItems / query.limit) || 0;
+  return {
+    items: rows,
+    meta: {
+      page: query.page,
+      limit: query.limit,
+      totalItems,
+      totalPages,
+    },
+  };
 }
 
 /**

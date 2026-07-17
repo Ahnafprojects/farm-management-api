@@ -1,16 +1,57 @@
 import { db } from '../db/connection.js';
 
+const SORTABLE_COLUMNS = new Set(['name', 'area_hectare', 'created_at']);
+
 /**
- * Returns every farm ordered by most recently created first.
- * @returns {object[]}
+ * Builds the WHERE clause and bound params shared by count/list queries.
+ * @param {{ location?: string, crop_type?: string, search?: string }} filters
  */
-export function findAll() {
-  return db
-    .prepare(
-      `SELECT id, name, location, area_hectare, crop_type, created_at, updated_at
-       FROM farms ORDER BY created_at DESC`,
-    )
-    .all();
+function buildWhereClause(filters) {
+  const clauses = [];
+  const params = {};
+
+  if (filters.location) {
+    clauses.push('location LIKE @location COLLATE NOCASE');
+    params.location = `%${filters.location}%`;
+  }
+  if (filters.crop_type) {
+    clauses.push('crop_type LIKE @crop_type COLLATE NOCASE');
+    params.crop_type = `%${filters.crop_type}%`;
+  }
+  if (filters.search) {
+    clauses.push('name LIKE @search COLLATE NOCASE');
+    params.search = `%${filters.search}%`;
+  }
+
+  const where = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
+  return { where, params };
+}
+
+/**
+ * Returns a page of farms matching the given filters, plus the total count
+ * of matching rows (for pagination metadata).
+ * @param {{ page: number, limit: number, location?: string, crop_type?: string, search?: string, sort: string, order: string }} options
+ * @returns {{ rows: object[], totalItems: number }}
+ */
+export function findMany({ page, limit, location, crop_type, search, sort, order }) {
+  const { where, params } = buildWhereClause({ location, crop_type, search });
+  const sortColumn = SORTABLE_COLUMNS.has(sort) ? sort : 'created_at';
+  const sortOrder = order === 'asc' ? 'ASC' : 'DESC';
+  const offset = (page - 1) * limit;
+
+  const countStmt = db.prepare(`SELECT COUNT(*) AS total FROM farms ${where}`);
+  const { total } = countStmt.get(params);
+
+  const listStmt = db.prepare(`
+    SELECT id, name, location, area_hectare, crop_type, created_at, updated_at
+    FROM farms
+    ${where}
+    ORDER BY ${sortColumn} ${sortOrder}
+    LIMIT @limit OFFSET @offset
+  `);
+  const rows = listStmt.all({ ...params, limit, offset });
+
+  return { rows, totalItems: total };
 }
 
 /**
@@ -88,4 +129,4 @@ export function remove(id) {
   return result.changes > 0;
 }
 
-export default { findAll, findById, create, update, remove };
+export default { findMany, findById, create, update, remove };
