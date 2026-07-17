@@ -14,7 +14,7 @@ REST API untuk mengelola data lahan pertanian — dibangun dengan Node.js, Expre
 - [Fitur](#fitur)
 - [Tech Stack](#tech-stack)
 - [Arsitektur](#arsitektur)
-- [Memulai](#memulai)
+- [Instalasi dan Setup Lengkap](#instalasi-dan-setup-lengkap)
 - [Environment Variables](#environment-variables)
 - [Autentikasi](#autentikasi)
 - [Referensi API](#referensi-api)
@@ -22,8 +22,9 @@ REST API untuk mengelola data lahan pertanian — dibangun dengan Node.js, Expre
 - [Testing](#testing)
 - [Docker](#docker)
 - [Dokumentasi API](#dokumentasi-api)
+- [Troubleshooting](#troubleshooting)
 - [Keputusan Desain](#keputusan-desain)
-- [Status Proyek & Rencana Pengembangan](#status-proyek--rencana-pengembangan)
+- [Status Proyek dan Rencana Pengembangan](#status-proyek-dan-rencana-pengembangan)
 - [Author](#author)
 
 ## Gambaran Umum
@@ -39,27 +40,27 @@ penanganan error terpusat, automated test, kemasan Docker, dan dokumentasi OpenA
 
 **Wajib**
 
-- ✅ `GET /farms` — daftar data dengan paginasi
-- ✅ `GET /farms/:id` — ambil satu data
-- ✅ `POST /farms` — buat data baru (dilindungi JWT)
-- ✅ `PUT /farms/:id` — update data (dilindungi JWT)
-- ✅ `DELETE /farms/:id` — hapus data (dilindungi JWT)
-- ✅ Pencarian (`search` berdasarkan nama) dan filter (`location`, `crop_type`)
-- ✅ Autentikasi JWT (`/auth/register`, `/auth/login`)
-- ✅ Setup Docker (multi-stage build + docker-compose)
-- ✅ Unit/integration test (Jest + Supertest)
-- ✅ Dokumentasi OpenAPI (Swagger UI di `/docs`)
-- ✅ README yang lengkap
+- [x] `GET /farms` — daftar data dengan paginasi
+- [x] `GET /farms/:id` — ambil satu data
+- [x] `POST /farms` — buat data baru (dilindungi JWT)
+- [x] `PUT /farms/:id` — update data (dilindungi JWT)
+- [x] `DELETE /farms/:id` — hapus data (dilindungi JWT)
+- [x] Pencarian (`search` berdasarkan nama) dan filter (`location`, `crop_type`)
+- [x] Autentikasi JWT (`/auth/register`, `/auth/login`)
+- [x] Setup Docker (multi-stage build + docker-compose)
+- [x] Unit/integration test (Jest + Supertest)
+- [x] Dokumentasi OpenAPI (Swagger UI di `/docs`)
+- [x] README yang lengkap
 
 **Bonus**
 
-- ✅ Pengurutan (`sort`, `order`)
-- ✅ Rate limiting (umum + lebih ketat khusus `/auth/*`)
-- ✅ Seed script dengan data lahan pertanian Indonesia yang realistis + demo user
-- ✅ Postman collection
-- ✅ CI GitHub Actions (lint + test setiap push/PR)
-- ✅ ESLint + Prettier tanpa warning
-- ✅ Format response sukses/error yang konsisten di semua endpoint, termasuk 404 dan 429
+- [x] Pengurutan (`sort`, `order`)
+- [x] Rate limiting (umum + lebih ketat khusus `/auth/*`)
+- [x] Seed script dengan data lahan pertanian Indonesia yang realistis + demo user
+- [x] Postman collection
+- [x] CI GitHub Actions (lint + test setiap push/PR)
+- [x] ESLint + Prettier tanpa warning
+- [x] Format response sukses/error yang konsisten di semua endpoint, termasuk 404 dan 429
 
 ## Tech Stack
 
@@ -76,7 +77,7 @@ penanganan error terpusat, automated test, kemasan Docker, dan dokumentasi OpenA
 | Docs        | `swagger-ui-express` + `openapi.yaml` manual | Dokumentasi interaktif yang selalu sinkron dengan kode                                                                                                    |
 | Lint/Format | ESLint + Prettier                            | Gaya kode konsisten, menangkap bug lebih awal                                                                                                             |
 | Container   | Docker (multi-stage) + Compose               | Build yang dapat direproduksi, image runtime kecil, volume persisten untuk file DB                                                                        |
-| CI          | GitHub Actions                               | Gate otomatis lint + test di setiap push/PR                                                                                                               |
+| CI          | GitHub Actions                               | Gate otomatis lint + format check + test di setiap push/PR                                                                                                |
 
 ## Arsitektur
 
@@ -134,34 +135,265 @@ Response dikirim balik lewat controller, atau
 middleware errorHandler kalau ada yang error
 ```
 
-## Memulai
+## Instalasi dan Setup Lengkap
 
-Prasyarat: Node.js 20+, npm.
+Bagian ini ditulis selengkap mungkin, mulai dari nol, supaya siapa pun yang belum
+pernah menyentuh Node.js sekalipun bisa mengikuti dan menjalankan proyek ini
+sampai selesai.
+
+### Langkah 0 — Cek prasyarat di komputer kamu
+
+Proyek ini butuh:
+
+- **Node.js versi 20 atau lebih baru** (termasuk `npm`, yang selalu ikut terpasang bersama Node.js)
+- **Git** (untuk clone repository)
+- **Docker** dan **Docker Compose** — opsional, hanya kalau kamu mau menjalankan lewat container
+- **curl** atau **Postman** — opsional, untuk mencoba endpoint secara manual
+
+Cek dulu apakah semuanya sudah terpasang dengan menjalankan perintah berikut satu per satu di terminal:
 
 ```bash
-# 1. Clone repository
-git clone <your-fork-url> farm-management-api
+node -v
+npm -v
+git --version
+docker --version
+```
+
+Kalau semua perintah di atas mengeluarkan nomor versi (bukan pesan "command not found"),
+kamu bisa langsung lompat ke [Langkah 2](#langkah-2--clone-repository).
+
+Contoh output yang benar:
+
+```
+v20.19.0
+10.8.2
+git version 2.43.0
+Docker version 27.3.1, build ce12230
+```
+
+Kalau `node -v` menunjukkan versi di bawah 20 (misalnya v16 atau v18), atau kalau
+perintahnya tidak dikenali sama sekali, lanjut ke Langkah 1 untuk install/upgrade Node.js.
+
+### Langkah 1 — Install Node.js (kalau belum ada atau versinya kurang dari 20)
+
+Pilih salah satu cara sesuai sistem operasi kamu.
+
+**Opsi A — Pakai nvm (disarankan, mudah untuk ganti-ganti versi Node.js di kemudian hari)**
+
+Untuk macOS / Linux:
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+
+# tutup dan buka lagi terminal, atau jalankan:
+source ~/.bashrc   # atau ~/.zshrc kalau pakai zsh
+
+nvm install 20
+nvm use 20
+```
+
+Untuk Windows, pakai [nvm-windows](https://github.com/coreybutler/nvm-windows/releases):
+download installer `.exe` dari halaman rilis tersebut, jalankan, lalu buka
+Command Prompt/PowerShell baru dan jalankan:
+
+```
+nvm install 20.19.0
+nvm use 20.19.0
+```
+
+**Opsi B — Download installer resmi langsung**
+
+Buka [nodejs.org](https://nodejs.org/), download versi **LTS** (saat ini minimal versi 20),
+lalu jalankan installer-nya dan ikuti langkah-langkahnya sampai selesai.
+
+**Verifikasi setelah instalasi:**
+
+```bash
+node -v
+npm -v
+```
+
+Pastikan `node -v` menunjukkan `v20.x.x` atau lebih tinggi sebelum lanjut.
+
+### Langkah 2 — Clone repository
+
+```bash
+git clone https://github.com/Ahnafprojects/farm-management-api.git
 cd farm-management-api
+```
 
-# 2. Install dependencies
+Kalau kamu clone dari fork sendiri, ganti URL di atas dengan URL fork kamu.
+
+Setelah `cd`, cek isi foldernya untuk memastikan clone berhasil:
+
+```bash
+ls
+```
+
+Harus muncul file/folder seperti `package.json`, `src/`, `tests/`, `docs/`, `README.md`, dan lain-lain.
+
+### Langkah 3 — Install semua dependency
+
+```bash
 npm install
+```
 
-# 3. Konfigurasi environment variables
+Proses ini akan mengunduh semua package yang dibutuhkan (Express, Zod, better-sqlite3,
+Jest, dan lain-lain) ke dalam folder `node_modules/`. Prosesnya biasanya memakan waktu
+sekitar 10-40 detik tergantung koneksi internet.
+
+Salah satu dependency, `better-sqlite3`, memerlukan proses build native (compile ke
+binary sesuai sistem operasi kamu). Kalau proses ini gagal, biasanya karena build tools
+belum terpasang — lihat bagian [Troubleshooting](#troubleshooting) untuk solusinya.
+
+Output yang menandakan sukses akan terlihat seperti ini di baris terakhir:
+
+```
+added 585 packages, and audited 586 packages in 20s
+found 0 vulnerabilities
+```
+
+### Langkah 4 — Konfigurasi environment variables
+
+Salin file contoh environment menjadi file `.env` yang sungguhan:
+
+```bash
 cp .env.example .env
-# edit .env dan isi JWT_SECRET dengan string acak yang panjang (untuk lokal, bebas)
+```
 
-# 4. Seed database (membuat data/farms.db berisi contoh data farm + demo user)
+Lalu buka file `.env` dengan text editor apa pun (VS Code, nano, vim, dsb.) dan isi
+minimal variabel `JWT_SECRET` dengan string acak yang panjang. Untuk kebutuhan lokal,
+kamu bisa generate string acak dengan perintah:
+
+```bash
+openssl rand -hex 32
+```
+
+Salin hasilnya, lalu tempel sebagai nilai `JWT_SECRET` di file `.env`, contoh:
+
+```
+JWT_SECRET=8f3a9c1e7b2d4f6a9c0e1b3d5f7a9c1e3b5d7f9a1c3e5b7d9f1a3c5e7b9d1f3a
+```
+
+Variabel lain di `.env.example` sudah punya nilai default yang masuk akal untuk
+development lokal dan tidak wajib diubah. Penjelasan lengkap tiap variabel ada di
+bagian [Environment Variables](#environment-variables).
+
+### Langkah 5 — Isi database dengan data contoh (seed)
+
+```bash
 npm run seed
+```
 
-# 5. Jalankan mode development (auto-restart saat file berubah)
+Perintah ini akan membuat file database SQLite di `data/farms.db` (folder `data/`
+dibuat otomatis kalau belum ada), lalu mengisinya dengan 14 data lahan pertanian
+contoh dan 1 akun demo untuk testing.
+
+Output yang benar:
+
+```
+Seeded 14 farms and 1 demo user (demo@farmapi.dev / Password123!).
+```
+
+Kalau kamu menjalankan `npm run seed` lagi di kemudian hari, data lama akan dihapus
+dan diisi ulang dari awal (aman untuk dijalankan berkali-kali).
+
+### Langkah 6 — Jalankan server
+
+Untuk development (server otomatis restart setiap ada perubahan file):
+
+```bash
 npm run dev
+```
 
-# ...atau jalankan mode production
+Atau untuk mode seperti production (tanpa auto-restart):
+
+```bash
 npm start
 ```
 
-API akan tersedia di `http://localhost:3000`, dengan dokumentasi interaktif di
-`http://localhost:3000/docs`.
+Kalau berhasil, akan muncul log seperti ini di terminal:
+
+```
+Farm Management API listening on port 3000 (development)
+```
+
+Biarkan terminal ini tetap terbuka dan berjalan — ini adalah proses server kamu.
+Buka terminal/tab baru untuk melanjutkan ke langkah berikutnya.
+
+### Langkah 7 — Verifikasi server benar-benar berjalan
+
+Di terminal baru, jalankan:
+
+```bash
+curl http://localhost:3000/health
+```
+
+Response yang benar:
+
+```json
+{
+  "success": true,
+  "message": "Service is healthy",
+  "data": { "status": "ok", "uptime": 5, "timestamp": "2026-07-17T12:00:00.000Z" }
+}
+```
+
+Kalau muncul response seperti di atas, artinya server sudah berjalan dengan benar.
+
+Kamu juga bisa membuka dokumentasi interaktif (Swagger UI) langsung di browser:
+
+```
+http://localhost:3000/docs
+```
+
+### Langkah 8 — Coba endpoint secara manual (opsional, tapi disarankan)
+
+Ambil daftar farm yang sudah di-seed:
+
+```bash
+curl http://localhost:3000/farms
+```
+
+Login dengan akun demo untuk mendapatkan token JWT:
+
+```bash
+curl -s -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"demo@farmapi.dev","password":"Password123!"}'
+```
+
+Salin nilai `data.token` dari response di atas, lalu simpan ke variabel supaya
+gampang dipakai ulang:
+
+```bash
+TOKEN="tempel-token-di-sini"
+```
+
+Coba buat data farm baru menggunakan token tersebut:
+
+```bash
+curl -s -X POST http://localhost:3000/farms \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"Sawah Percobaan","location":"Bogor, Jawa Barat","area_hectare":3.5,"crop_type":"padi"}'
+```
+
+Kalau berhasil, kamu akan mendapat response `201 Created` berisi data farm yang baru dibuat.
+
+### Langkah 9 — Jalankan test suite (opsional, tapi disarankan untuk memastikan semuanya benar)
+
+```bash
+npm test
+```
+
+Semua 72 test seharusnya lolos (`Tests: 72 passed, 72 total`). Test ini berjalan
+di database terpisah (in-memory), jadi tidak akan mengubah data yang sudah kamu
+seed di Langkah 5.
+
+Sampai di sini, instalasi dan setup sudah selesai sepenuhnya. Untuk menjalankan
+lewat Docker sebagai alternatif, lihat bagian [Docker](#docker). Kalau ada error
+di salah satu langkah di atas, cek bagian [Troubleshooting](#troubleshooting).
 
 ## Environment Variables
 
@@ -175,7 +407,7 @@ daftar lengkap dan otoritatif.
 | `PORT`                      | Tidak  | `3000`            | Port tempat HTTP server berjalan                                                            |
 | `NODE_ENV`                  | Tidak  | `development`     | `development` \| `test` \| `production`                                                     |
 | `DB_PATH`                   | Tidak  | `./data/farms.db` | Path ke file SQLite, atau `:memory:` untuk penyimpanan sementara                            |
-| `JWT_SECRET`                | **Ya** | —                 | Secret untuk sign/verify JWT. Boot gagal kalau tidak ada; di production minimal 16 karakter |
+| `JWT_SECRET`                | Ya     | —                 | Secret untuk sign/verify JWT. Boot gagal kalau tidak ada; di production minimal 16 karakter |
 | `JWT_EXPIRES_IN`            | Tidak  | `1h`              | Masa berlaku token, misal `1h`, `7d`                                                        |
 | `CORS_ORIGIN`               | Tidak  | `*`               | Daftar origin yang diizinkan (pisahkan koma). `*` ditolak di production                     |
 | `RATE_LIMIT_WINDOW_MS`      | Tidak  | `900000`          | Jendela waktu rate limit umum (ms)                                                          |
@@ -208,6 +440,9 @@ TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
 curl -s http://localhost:3000/farms \
   -H "Authorization: Bearer $TOKEN"
 ```
+
+Kalau kamu tidak punya `jq` terpasang, ambil token secara manual dari response JSON
+dan tempel langsung ke variabel `TOKEN`.
 
 ## Referensi API
 
@@ -311,15 +546,15 @@ Butuh auth: Tidak
 
 Query params:
 
-| Param       | Tipe    | Aturan                                                         |
-| ----------- | ------- | -------------------------------------------------------------- |
-| `page`      | integer | ≥ 1, default `1`                                               |
-| `limit`     | integer | 1–100, default `10`                                            |
-| `location`  | string  | pencocokan sebagian, tidak case-sensitive                      |
-| `crop_type` | string  | pencocokan sebagian, tidak case-sensitive                      |
-| `search`    | string  | pencocokan sebagian pada `name`, tidak case-sensitive          |
-| `sort`      | enum    | `name` \| `area_hectare` \| `created_at`, default `created_at` |
-| `order`     | enum    | `asc` \| `desc`, default `desc`                                |
+| Param       | Tipe    | Aturan                                                             |
+| ----------- | ------- | ------------------------------------------------------------------ |
+| `page`      | integer | lebih besar sama dengan 1, default `1`                             |
+| `limit`     | integer | 1 sampai 100, default `10`                                         |
+| `location`  | string  | pencocokan sebagian, tidak case-sensitive                          |
+| `crop_type` | string  | pencocokan sebagian, tidak case-sensitive                          |
+| `search`    | string  | pencocokan sebagian pada `name`, tidak case-sensitive              |
+| `sort`      | enum    | `name` atau `area_hectare` atau `created_at`, default `created_at` |
+| `order`     | enum    | `asc` atau `desc`, default `desc`                                  |
 
 Filter digabung dengan AND.
 
@@ -409,16 +644,16 @@ Error `404`:
 
 ### POST /farms
 
-Butuh auth: **Ya** (`Authorization: Bearer <token>`)
+Butuh auth: Ya (`Authorization: Bearer <token>`)
 
 Body (field tak dikenal ditolak):
 
-| Field          | Tipe   | Aturan                      |
-| -------------- | ------ | --------------------------- |
-| `name`         | string | wajib, 1–100 karakter       |
-| `location`     | string | opsional, maks 150 karakter |
-| `area_hectare` | number | opsional, harus positif     |
-| `crop_type`    | string | opsional, maks 50 karakter  |
+| Field          | Tipe   | Aturan                       |
+| -------------- | ------ | ---------------------------- |
+| `name`         | string | wajib, 1 sampai 100 karakter |
+| `location`     | string | opsional, maks 150 karakter  |
+| `area_hectare` | number | opsional, harus positif      |
+| `crop_type`    | string | opsional, maks 50 karakter   |
 
 curl:
 
@@ -447,6 +682,19 @@ Sukses `201` (juga mengembalikan header `Location: /farms/<id>`):
 }
 ```
 
+Error `400` (contoh: `name` tidak diisi):
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid request data",
+    "details": [{ "field": "name", "message": "Name is required" }]
+  }
+}
+```
+
 Error `401` (token hilang/tidak valid):
 
 ```json
@@ -458,7 +706,7 @@ Error `401` (token hilang/tidak valid):
 
 ### PUT /farms/:id
 
-Butuh auth: **Ya**. Semantik full-update — validasi sama seperti `POST` (`name` wajib); `updated_at` diperbarui.
+Butuh auth: Ya. Semantik full-update — validasi sama seperti `POST` (`name` wajib); `updated_at` diperbarui.
 
 curl:
 
@@ -498,7 +746,7 @@ Error `404`:
 
 ### DELETE /farms/:id
 
-Butuh auth: **Ya**
+Butuh auth: Ya
 
 curl:
 
@@ -574,7 +822,7 @@ Cakupan test meliputi:
 
 - `GET /health`
 - Auth: register sukses/duplikat/body tidak valid, login sukses/password salah (pesan identik, waktu respons konstan)
-- Farms happy path: create (+ header `Location`), list (+ `meta`), get by id, update, delete
+- Farms happy path: create (dengan header `Location`), list (dengan `meta`), get by id, update, delete
 - Farms error path: token hilang/tidak valid/kedaluwarsa/palsu/`alg:none`, `name` hilang/kosong/spasi/terlalu panjang, `area_hectare` tidak valid, field tak dikenal, mass-assignment field sistem, id non-integer/negatif/nol/desimal, 404 pada GET/PUT/DELETE
 - Ketepatan meta paginasi, validasi batas `limit`/`page`, dan filter tanpa hasil yang tetap mengembalikan `200` dengan array kosong
 - Filter berdasarkan `location`, `crop_type`, `search`, kombinasi filter dengan AND, serta `sort`/`order` (termasuk verifikasi urutan aktual dan penolakan nilai tidak valid)
@@ -582,11 +830,35 @@ Cakupan test meliputi:
 
 ## Docker
 
-```bash
-# Build dan jalankan lewat Docker Compose (baca JWT_SECRET dkk. dari environment shell atau file .env)
-JWT_SECRET=$(openssl rand -hex 32) docker compose up --build
+Pastikan Docker dan Docker Compose sudah terpasang dan Docker daemon sedang berjalan
+(cek dengan `docker info`, kalau muncul error berarti Docker Desktop/daemon belum dijalankan).
 
-# Atau build/jalankan image secara langsung
+**Cara paling mudah — pakai Docker Compose:**
+
+```bash
+JWT_SECRET=$(openssl rand -hex 32) docker compose up --build
+```
+
+Perintah ini akan build image, membuat container, dan menjalankannya sekaligus.
+Tunggu sampai muncul log `Farm Management API listening on port 3000`, lalu di
+terminal lain jalankan:
+
+```bash
+curl http://localhost:3000/health
+```
+
+Untuk menghentikan container:
+
+```bash
+docker compose down
+```
+
+Tambahkan flag `-v` (`docker compose down -v`) kalau kamu juga ingin menghapus
+volume data (`farm-data`) sekaligus, misalnya untuk mulai dari database yang benar-benar bersih.
+
+**Cara alternatif — build dan jalankan image secara manual:**
+
+```bash
 docker build -t farm-management-api .
 docker run -p 3000:3000 \
   -e JWT_SECRET=$(openssl rand -hex 32) \
@@ -596,12 +868,61 @@ docker run -p 3000:3000 \
 
 Container berjalan sebagai non-root user, membuka port `3000`, menyimpan file
 SQLite di named volume (`farm-data`) agar data tetap ada setelah restart, dan
-memiliki `HEALTHCHECK` yang mengecek `GET /health`.
+memiliki `HEALTHCHECK` yang mengecek `GET /health` setiap 30 detik.
 
 ## Dokumentasi API
 
 - Swagger UI interaktif: [`GET /docs`](http://localhost:3000/docs), dihasilkan dari `docs/openapi.yaml` (OpenAPI 3.0).
-- Postman collection: [`docs/postman_collection.json`](docs/postman_collection.json) — import ke Postman, atur variabel collection `token` setelah memanggil **Login** (otomatis diisi lewat test script), lalu coba semua endpoint.
+- Postman collection: [`docs/postman_collection.json`](docs/postman_collection.json) — import ke Postman, atur variabel collection `token` setelah memanggil Login (otomatis diisi lewat test script), lalu coba semua endpoint.
+
+## Troubleshooting
+
+**`npm install` gagal saat build `better-sqlite3`**
+
+Package ini butuh compiler native (Python, make, g++/gcc). Di Linux, install dulu:
+
+```bash
+sudo apt-get install -y python3 make g++
+```
+
+Di macOS, pastikan Xcode Command Line Tools terpasang:
+
+```bash
+xcode-select --install
+```
+
+Di Windows, disarankan pakai WSL (Windows Subsystem for Linux), atau install
+`windows-build-tools` sesuai dokumentasi `node-gyp`.
+
+**Error `Error: listen EADDRINUSE: address already in use :::3000`**
+
+Artinya port 3000 sudah dipakai proses lain. Cara mengatasi:
+
+```bash
+# cari proses yang memakai port 3000
+lsof -i :3000
+
+# matikan prosesnya (ganti <PID> dengan angka dari output di atas)
+kill <PID>
+```
+
+Atau jalankan API di port lain dengan mengubah `PORT` di file `.env`.
+
+**Boot gagal dengan pesan terkait `JWT_SECRET`**
+
+Berarti file `.env` belum dibuat atau `JWT_SECRET` masih kosong. Ulangi
+[Langkah 4](#langkah-4--konfigurasi-environment-variables) di atas.
+
+**`npm run seed` sukses tapi `GET /farms` mengembalikan data kosong**
+
+Kemungkinan server dan seed script menunjuk ke file database yang berbeda.
+Pastikan `DB_PATH` di `.env` sama antara saat menjalankan `npm run seed` dan
+`npm run dev`/`npm start` (keduanya membaca file `.env` yang sama secara default).
+
+**Docker: `docker info` menampilkan error**
+
+Docker daemon belum berjalan. Buka aplikasi Docker Desktop (macOS/Windows) atau
+jalankan `sudo systemctl start docker` (Linux), lalu coba lagi.
 
 ## Keputusan Desain
 
@@ -613,15 +934,15 @@ memiliki `HEALTHCHECK` yang mengecek `GET /health`.
   juga menyederhanakan layer service/repository (tidak ada `await` bertebaran
   di query sederhana) dan membuat test cepat serta terisolasi penuh lewat
   database `:memory:`.
-- **Arsitektur berlapis** (routes → controllers → services → repositories):
+- **Arsitektur berlapis** (routes menuju controllers menuju services menuju repositories):
   memisahkan urusan HTTP, aturan bisnis, dan SQL masing-masing di satu tempat,
   sehingga tiap layer bisa diuji atau diganti secara independen. Controller
   tetap tipis; semua SQL terkumpul di `repositories/`, yang membuat aturan
   "tidak ada string concatenation input user ke SQL" mudah dijamin dan direview.
 - **Zod**: schema sekaligus berfungsi sebagai dokumentasi, melakukan coercion
-  tipe query string dengan aman (misal `page=2` → `2`), dan menolak field tak
-  dikenal (`.strict()`) sehingga typo di body request langsung gagal alih-alih
-  diabaikan diam-diam.
+  tipe query string dengan aman (misal `page=2` menjadi angka `2`), dan menolak
+  field tak dikenal (`.strict()`) sehingga typo di body request langsung gagal
+  alih-alih diabaikan diam-diam.
 - **Tanpa prefix `/api/v1`**: brief menetapkan path literal yang eksak
   (`/farms`, `/auth/...`, `/health`, `/docs`), jadi tidak ditambahkan prefix
   versi. Dalam rollout production sungguhan, menambahkan `/api/v1/...` (atau
@@ -629,12 +950,12 @@ memiliki `HEALTHCHECK` yang mengecek `GET /health`.
   pertama begitu versi API kedua dibutuhkan.
 - **Security**: `helmet` untuk header HTTP standar yang aman, `cors` dibatasi
   ke whitelist origin eksplisit (dengan `*` ditolak total di production),
-  rate limiting umum + khusus auth untuk memperlambat percobaan brute-force,
+  rate limiting umum dan khusus auth untuk memperlambat percobaan brute-force,
   batas body JSON 10kb, bcrypt (cost 10) untuk hashing password, dan validasi
   Zod yang fail-fast pada environment variable saat boot supaya kesalahan
   konfigurasi langsung ketahuan, bukan baru muncul saat ada request.
 
-## Status Proyek & Rencana Pengembangan
+## Status Proyek dan Rencana Pengembangan
 
 Proyek ini sudah memenuhi seluruh brief dan siap untuk direview. Daftar jujur
 hal yang akan ditambahkan pada rollout production sungguhan:
